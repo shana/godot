@@ -42,6 +42,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "core/os/keyboard.h"
+#include "editor/bindings_generator.h"
 #include "editor/editor_internal_calls.h"
 #include "editor/editor_node.h"
 #include "editor/editor_settings.h"
@@ -105,6 +106,14 @@ void CSharpLanguage::init() {
 	GLOBAL_DEF("dotnet/project/assembly_name", "");
 #ifdef TOOLS_ENABLED
 	GLOBAL_DEF("dotnet/project/solution_directory", "");
+#endif
+
+#ifdef TOOLS_ENABLED
+	// Exit early if we're going to be generating glue code, we don't need the module for that
+	if (BindingsGenerator::is_generating_glue()) {
+		print_verbose(".NET: Skipping runtime initialization because glue generation is enabled.");
+		return;
+	}
 #endif
 
 	gdmono = memnew(GDMono);
