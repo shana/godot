@@ -3919,8 +3919,22 @@ void BindingsGenerator::_initialize() {
 }
 
 static String generate_all_glue_option = "--generate-mono-glue";
-bool BindingsGenerator::generating_glue;
-String BindingsGenerator::glue_dir_path;
+
+static void handle_cmdline_options(String glue_dir_path) {
+	BindingsGenerator bindings_generator;
+	bindings_generator.set_log_print_enabled(true);
+
+	if (!bindings_generator.is_initialized()) {
+		ERR_PRINT("Failed to initialize the bindings generator");
+		return;
+	}
+
+	CRASH_COND(glue_dir_path.is_empty());
+
+	if (bindings_generator.generate_cs_api(glue_dir_path.path_join(API_SOLUTION_NAME)) != OK) {
+		ERR_PRINT(generate_all_glue_option + ": Failed to generate the C# API.");
+	}
+}
 
 static void cleanup_and_exit_godot() {
 	// Exit once done
@@ -3928,58 +3942,34 @@ static void cleanup_and_exit_godot() {
 	::exit(0);
 }
 
-void BindingsGenerator::process_cmdline(const List<String> &p_cmdline_args) {
+void BindingsGenerator::handle_cmdline_args(const List<String> &p_cmdline_args) {
+	String glue_dir_path;
+
 	const List<String>::Element *elem = p_cmdline_args.front();
 
 	while (elem) {
 		if (elem->get() == generate_all_glue_option) {
-			elem = elem->next();
+			const List<String>::Element *path_elem = elem->next();
 
-			if (elem) {
-				glue_dir_path = elem->get();
-			}
-
-			if (glue_dir_path.is_empty()) {
+			if (path_elem) {
+				glue_dir_path = path_elem->get();
+				elem = elem->next();
+			} else {
 				ERR_PRINT(generate_all_glue_option + ": No output directory specified (expected path to '{GODOT_ROOT}/modules/mono/glue').");
 				// Exit once done with invalid command line arguments
 				cleanup_and_exit_godot();
 			}
-
-			// valid glue path is set, enable glue generation
-			generating_glue = true;
 
 			break;
 		}
 
 		elem = elem->next();
 	}
-}
 
-// static trampoline to make sure the BindingsGenerator instance goes fully out of scope before exiting
-static void _generate(const String &p_glue_dir_path) {
-	BindingsGenerator bindings_generator;
-	bindings_generator.generate(p_glue_dir_path);
-}
-
-void BindingsGenerator::generate_bindings() {
-	_generate(glue_dir_path);
-
-	// Exit once done
-	cleanup_and_exit_godot();
-}
-
-void BindingsGenerator::generate(const String &p_glue_dir_path) {
-	set_log_print_enabled(true);
-
-	if (!is_initialized()) {
-		ERR_PRINT("Failed to initialize the bindings generator");
-		return;
-	}
-
-	CRASH_COND(p_glue_dir_path.is_empty());
-
-	if (generate_cs_api(p_glue_dir_path.path_join(API_SOLUTION_NAME)) != OK) {
-		ERR_PRINT(generate_all_glue_option + ": Failed to generate the C# API.");
+	if (glue_dir_path.length()) {
+		handle_cmdline_options(glue_dir_path);
+		// Exit once done
+		cleanup_and_exit_godot();
 	}
 }
 

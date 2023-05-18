@@ -787,9 +787,7 @@ class BindingsGenerator {
 
 	void _initialize();
 
-	static bool generating_glue;
-	static String glue_dir_path;
-
+public:
 	Error generate_cs_core_project(const String &p_proj_dir);
 	Error generate_cs_editor_project(const String &p_proj_dir);
 	Error generate_cs_api(const String &p_output_dir);
@@ -799,11 +797,7 @@ class BindingsGenerator {
 
 	_FORCE_INLINE_ bool is_initialized() { return initialized; }
 
-public:
-	void generate(const String &p_glue_dir_path);
-	static void generate_bindings();
-	static void process_cmdline(const List<String> &p_cmdline_args);
-	_FORCE_INLINE_ static bool is_generating_glue() { return generating_glue; }
+	static void handle_cmdline_args(const List<String> &p_cmdline_args);
 
 	BindingsGenerator() {
 		_initialize();

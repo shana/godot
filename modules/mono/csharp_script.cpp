@@ -42,7 +42,6 @@
 
 #ifdef TOOLS_ENABLED
 #include "core/os/keyboard.h"
-#include "editor/bindings_generator.h"
 #include "editor/editor_internal_calls.h"
 #include "editor/editor_node.h"
 #include "editor/editor_settings.h"
@@ -94,6 +93,12 @@ String CSharpLanguage::get_extension() const {
 }
 
 void CSharpLanguage::init() {
+#ifdef TOOLS_ENABLED
+	if (OS::get_singleton()->get_cmdline_args().find("--generate-mono-glue")) {
+		print_verbose(".NET: Skipping runtime initialization because glue generation is enabled.");
+		return;
+	}
+#endif
 #ifdef DEBUG_METHODS_ENABLED
 	if (OS::get_singleton()->get_cmdline_args().find("--class-db-json")) {
 		class_db_api_to_json("user://class_db_api.json", ClassDB::API_CORE);
@@ -106,14 +111,6 @@ void CSharpLanguage::init() {
 	GLOBAL_DEF("dotnet/project/assembly_name", "");
 #ifdef TOOLS_ENABLED
 	GLOBAL_DEF("dotnet/project/solution_directory", "");
-#endif
-
-#ifdef TOOLS_ENABLED
-	// Exit early if we're going to be generating glue code, we don't need the module for that
-	if (BindingsGenerator::is_generating_glue()) {
-		print_verbose(".NET: Skipping runtime initialization because glue generation is enabled.");
-		return;
-	}
 #endif
 
 	gdmono = memnew(GDMono);

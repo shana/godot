@@ -2406,13 +2406,6 @@ Error Main::setup2() {
 	initialize_navigation_server();
 	register_server_singletons();
 
-#if defined(MODULE_MONO_ENABLED) && defined(TOOLS_ENABLED)
-	// Process command lines relevant to the bindings generator before initializing
-	// the mono module, so it can skip runtime initialization if we're generating glue
-	List<String> cmdline_args = OS::get_singleton()->get_cmdline_args();
-	BindingsGenerator::process_cmdline(cmdline_args);
-#endif
-
 	// This loads global classes, so it must happen before custom loaders and savers are registered
 	ScriptServer::init_languages();
 
@@ -2424,9 +2417,8 @@ Error Main::setup2() {
 	// register command line options to call at the right time. This needs to happen
 	// after init'ing the ScriptServer, but also after init'ing the ThemeDB,
 	// for the C# docs generation in the bindings.
-	if (BindingsGenerator::is_generating_glue()) {
-		BindingsGenerator::generate_bindings();
-	}
+	List<String> cmdline_args = OS::get_singleton()->get_cmdline_args();
+	BindingsGenerator::handle_cmdline_args(cmdline_args);
 #endif
 
 	if (use_debug_profiler && EngineDebugger::is_active()) {
