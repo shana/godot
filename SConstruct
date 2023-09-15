@@ -70,10 +70,9 @@ platform_flags = {}  # flags for each platform
 platform_doc_class_path = {}
 platform_exporters = []
 platform_apis = []
+platform_custom_tools = {}  # custom_tools for each platform
 
 time_at_start = time.time()
-
-custom_tools = []
 
 for x in sorted(glob.glob("platform/*")):
     if not os.path.isdir(x) or not os.path.exists(x + "/detect.py"):
@@ -105,59 +104,12 @@ for x in sorted(glob.glob("platform/*")):
         platform_list += [x]
         platform_opts[x] = detect.get_opts()
         platform_flags[x] = detect.get_flags()
+        platform_custom_tools[x] = ["default"]
         if hasattr(detect, "get_custom_tools"):
-            custom_tools = detect.get_custom_tools()
+            platform_custom_tools[x] = detect.get_custom_tools()
     sys.path.remove(tmppath)
     sys.modules.pop("detect")
 
-platform_arg = ARGUMENTS.get("platform", ARGUMENTS.get("p", False))
-
-# Set default tools, if the platform implementation didn't specify any
-if not custom_tools:
-    custom_tools = ["default"]
-
-print(custom_tools)
-
-# We let SCons build its default ENV as it includes OS-specific things which we don't
-# want to have to pull in manually.
-# Then we prepend PATH to make it take precedence, while preserving SCons' own entries.
-env_base = Environment(tools=custom_tools)
-
-# We let SCons build its default ENV as it includes OS-specific things which we don't
-# want to have to pull in manually.
-# Then we prepend PATH to make it take precedence, while preserving SCons' own entries.
-env_base = Environment(tools=custom_tools)
-env_base.PrependENVPath("PATH", os.getenv("PATH"))
-env_base.PrependENVPath("PKG_CONFIG_PATH", os.getenv("PKG_CONFIG_PATH"))
-if "TERM" in os.environ:  # Used for colored output.
-    env_base["ENV"]["TERM"] = os.environ["TERM"]
-
-env_base.disabled_modules = []
-env_base.module_version_string = ""
-env_base.msvc = False
-
-env_base.__class__.disable_module = methods.disable_module
-
-env_base.__class__.add_module_version_string = methods.add_module_version_string
-
-env_base.__class__.add_source_files = methods.add_source_files
-env_base.__class__.use_windows_spawn_fix = methods.use_windows_spawn_fix
-
-env_base.__class__.add_shared_library = methods.add_shared_library
-env_base.__class__.add_library = methods.add_library
-env_base.__class__.add_program = methods.add_program
-env_base.__class__.CommandNoCache = methods.CommandNoCache
-env_base.__class__.Run = methods.Run
-env_base.__class__.disable_warnings = methods.disable_warnings
-env_base.__class__.force_optimization_on_debug = methods.force_optimization_on_debug
-env_base.__class__.module_add_dependencies = methods.module_add_dependencies
-env_base.__class__.module_check_dependencies = methods.module_check_dependencies
-
-env_base["x86_libtheora_opt_gcc"] = False
-env_base["x86_libtheora_opt_vc"] = False
-
-# avoid issues when building with different versions of python out of the same directory
-env_base.SConsignFile(".sconsign{0}.dblite".format(pickle.HIGHEST_PROTOCOL))
 
 # Build options
 
@@ -267,8 +219,24 @@ opts.Add("CFLAGS", "Custom flags for the C compiler")
 opts.Add("CXXFLAGS", "Custom flags for the C++ compiler")
 opts.Add("LINKFLAGS", "Custom flags for the linker")
 
-# Update the environment to have all above options defined
-# in following code (especially platform and custom_modules).
+
+recheck_mingw = False
+
+# Set default tools, if the platform implementation didn't specify any
+custom_tools = ["default"]
+
+if os.name == "nt":
+    if methods.get_cmdline_bool("use_mingw", False):
+        custom_tools = ["mingw"]
+    else:
+        # At this point we aren't able to check other possible user or platform overrides,
+        # we'll need an environment for that, so defer the check
+        recheck_mingw = True
+
+# We let SCons build its default ENV as it includes OS-specific things which we don't
+# want to have to pull in manually.
+# Then we prepend PATH to make it take precedence, while preserving SCons' own entries.
+env_base = Environment(tools=custom_tools)
 opts.Update(env_base)
 
 # Platform selection: validate input, and add options.
@@ -323,9 +291,6 @@ if selected_platform in ["linux", "bsd", "x11"]:
     # Alias for convenience.
     selected_platform = "linuxbsd"
 
-# Make sure to update this to the found, valid platform as it's used through the buildsystem as the reference.
-# It should always be re-set after calling `opts.Update()` otherwise it uses the original input value.
-env_base["platform"] = selected_platform
 
 # Add platform-specific options.
 if selected_platform in platform_opts:
@@ -334,7 +299,72 @@ if selected_platform in platform_opts:
 
 # Update the environment to take platform-specific options into account.
 opts.Update(env_base)
-env_base["platform"] = selected_platform  # Must always be re-set after calling opts.Update().
+
+# Make sure to update this to the found, valid platform as it's used through the buildsystem as the reference.
+# It should always be re-set after calling `opts.Update()` otherwise it uses the original input value.
+env_base["platform"] = selected_platform
+
+reset_environment = False
+
+# Custom tools have changed, we need to reset the environment
+if set(custom_tools) != set(platform_custom_tools[selected_platform]):
+    reset_environment = True
+    custom_tools = platform_custom_tools[selected_platform]
+
+# MinGW is a special case, as it's a tool loaded as part of environment initialization
+# but we need an environment in order to merge user options
+# so we might have to recreate the environment
+if recheck_mingw and env_base["use_mingw"]:
+    reset_environment = True
+    custom_tools = ["mingw"]
+
+if reset_environment:
+    # rebuild the environment with the updated tools and reset everything
+    env_base = Environment(tools=custom_tools)
+
+    # Add platform-specific options.
+    if selected_platform in platform_opts:
+        for opt in platform_opts[selected_platform]:
+            opts.Add(opt)
+
+    # Update the environment to take platform-specific options into account.
+    opts.Update(env_base)
+    env_base["platform"] = selected_platform  # Must always be re-set after calling opts.Update().
+
+
+# Now we're ready to set our PATHs
+env_base.PrependENVPath("PATH", os.getenv("PATH"))
+env_base.PrependENVPath("PKG_CONFIG_PATH", os.getenv("PKG_CONFIG_PATH"))
+if "TERM" in os.environ:  # Used for colored output.
+    env_base["ENV"]["TERM"] = os.environ["TERM"]
+
+env_base.disabled_modules = []
+env_base.module_version_string = ""
+env_base.msvc = False
+
+env_base.__class__.disable_module = methods.disable_module
+
+env_base.__class__.add_module_version_string = methods.add_module_version_string
+
+env_base.__class__.add_source_files = methods.add_source_files
+env_base.__class__.use_windows_spawn_fix = methods.use_windows_spawn_fix
+
+env_base.__class__.add_shared_library = methods.add_shared_library
+env_base.__class__.add_library = methods.add_library
+env_base.__class__.add_program = methods.add_program
+env_base.__class__.CommandNoCache = methods.CommandNoCache
+env_base.__class__.Run = methods.Run
+env_base.__class__.disable_warnings = methods.disable_warnings
+env_base.__class__.force_optimization_on_debug = methods.force_optimization_on_debug
+env_base.__class__.module_add_dependencies = methods.module_add_dependencies
+env_base.__class__.module_check_dependencies = methods.module_check_dependencies
+
+env_base["x86_libtheora_opt_gcc"] = False
+env_base["x86_libtheora_opt_vc"] = False
+
+# avoid issues when building with different versions of python out of the same directory
+env_base.SConsignFile(".sconsign{0}.dblite".format(pickle.HIGHEST_PROTOCOL))
+
 
 # Detect modules.
 modules_detected = OrderedDict()
