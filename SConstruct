@@ -112,19 +112,11 @@ for x in sorted(glob.glob("platform/*")):
 
 platform_arg = ARGUMENTS.get("platform", ARGUMENTS.get("p", False))
 
-recheck_mingw = False
-
 # Set default tools, if the platform implementation didn't specify any
 if not custom_tools:
     custom_tools = ["default"]
 
-    if os.name == "nt":
-        if methods.get_cmdline_bool("use_mingw", False):
-            custom_tools = ["mingw"]
-        else:
-            # At this point we aren't able to check other possible user overrides,
-            # we'll need an environment for that, so defer the check
-            recheck_mingw = True
+print(custom_tools)
 
 # We let SCons build its default ENV as it includes OS-specific things which we don't
 # want to have to pull in manually.
