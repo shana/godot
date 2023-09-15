@@ -73,6 +73,8 @@ platform_apis = []
 
 time_at_start = time.time()
 
+custom_tools = []
+
 for x in sorted(glob.glob("platform/*")):
     if not os.path.isdir(x) or not os.path.exists(x + "/detect.py"):
         continue
@@ -103,20 +105,31 @@ for x in sorted(glob.glob("platform/*")):
         platform_list += [x]
         platform_opts[x] = detect.get_opts()
         platform_flags[x] = detect.get_flags()
+        if hasattr(detect, "get_custom_tools"):
+            custom_tools = detect.get_custom_tools()
     sys.path.remove(tmppath)
     sys.modules.pop("detect")
 
-custom_tools = ["default"]
-
 platform_arg = ARGUMENTS.get("platform", ARGUMENTS.get("p", False))
 
-if platform_arg == "android":
-    custom_tools = ["clang", "clang++", "as", "ar", "link"]
-elif platform_arg == "web":
-    # Use generic POSIX build toolchain for Emscripten.
-    custom_tools = ["cc", "c++", "ar", "link", "textfile", "zip"]
-elif os.name == "nt" and methods.get_cmdline_bool("use_mingw", False):
-    custom_tools = ["mingw"]
+recheck_mingw = False
+
+# Set default tools, if the platform implementation didn't specify any
+if not custom_tools:
+    custom_tools = ["default"]
+
+    if os.name == "nt":
+        if methods.get_cmdline_bool("use_mingw", False):
+            custom_tools = ["mingw"]
+        else:
+            # At this point we aren't able to check other possible user overrides,
+            # we'll need an environment for that, so defer the check
+            recheck_mingw = True
+
+# We let SCons build its default ENV as it includes OS-specific things which we don't
+# want to have to pull in manually.
+# Then we prepend PATH to make it take precedence, while preserving SCons' own entries.
+env_base = Environment(tools=custom_tools)
 
 # We let SCons build its default ENV as it includes OS-specific things which we don't
 # want to have to pull in manually.

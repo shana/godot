@@ -70,6 +70,11 @@ def get_flags():
     ]
 
 
+def get_custom_tools():
+    # Use generic POSIX build toolchain for Emscripten.
+    return ["cc", "c++", "ar", "link", "textfile", "zip"]
+
+
 def configure(env: "Environment"):
     # Validate arch.
     supported_arches = ["wasm32"]

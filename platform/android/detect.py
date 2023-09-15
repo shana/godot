@@ -71,6 +71,10 @@ def get_flags():
     ]
 
 
+def get_custom_tools():
+    return ["clang", "clang++", "as", "ar", "link"]
+
+
 # Check if Android NDK version is installed
 # If not, install it.
 def install_ndk_if_needed(env):
