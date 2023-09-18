@@ -168,7 +168,7 @@ using Godot.NativeInterop;
             {
                 var parameter = callback.Parameters[i];
 
-                AppendRefKind(source, parameter.RefKind);
+                AppendRefKind(source, parameter.RefKind, parameter.ScopedKind);
                 source.Append(' ');
                 source.Append(parameter.Type.FullQualifiedNameIncludeGlobal());
                 source.Append(' ');
@@ -204,7 +204,7 @@ using Godot.NativeInterop;
                     {
                         // If it's a by-ref param and we can't get the pointer
                         // just pass it by-ref and let it be pinned.
-                        AppendRefKind(methodCallArguments, parameter.RefKind)
+                        AppendRefKind(methodCallArguments, parameter.RefKind, parameter.ScopedKind)
                             .Append(' ')
                             .Append(parameter.Name);
                     }
@@ -338,7 +338,7 @@ using Godot.NativeInterop;
                     {
                         // If it's a by-ref param and we can't get the pointer
                         // just pass it by-ref and let it be pinned.
-                        AppendRefKind(source, parameter.RefKind)
+                        AppendRefKind(source, parameter.RefKind, parameter.ScopedKind)
                             .Append(' ')
                             .Append(parameter.Type.FullQualifiedNameIncludeGlobal());
                     }
@@ -384,11 +384,13 @@ using Godot.NativeInterop;
     private static bool IsByRefParameter(IParameterSymbol parameter) =>
         parameter.RefKind is RefKind.In or RefKind.Out or RefKind.Ref;
 
-    private static StringBuilder AppendRefKind(StringBuilder source, RefKind refKind) =>
+    private static StringBuilder AppendRefKind(StringBuilder source, RefKind refKind, ScopedKind scopedKind) =>
         refKind switch
         {
+            RefKind.In when scopedKind == ScopedKind.ScopedRef => source.Append("scoped in"),
             RefKind.In => source.Append("in"),
             RefKind.Out => source.Append("out"),
+            RefKind.Ref when scopedKind == ScopedKind.ScopedRef => source.Append("scoped ref"),
             RefKind.Ref => source.Append("ref"),
             _ => source,
         };
