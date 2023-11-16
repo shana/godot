@@ -12,6 +12,7 @@ using GodotTools.BuildLogger;
 using GodotTools.Internals;
 using GodotTools.Utils;
 using Directory = GodotTools.Utils.Directory;
+using File = GodotTools.Utils.File;
 
 namespace GodotTools.Build
 {
@@ -364,8 +365,11 @@ namespace GodotTools.Build
             {
                 arguments.Add("-library");
                 arguments.Add(Path.Combine(outputPath, baseDylib));
-                arguments.Add("-debug-symbols");
-                arguments.Add(Path.Combine(outputPath, baseSym));
+                if (File.Exists(Path.Combine(outputPath, baseSym)))
+                {
+                    arguments.Add("-debug-symbols");
+                    arguments.Add(Path.Combine(outputPath, baseSym));
+                }
             }
 
             arguments.Add("-output");

@@ -211,7 +211,8 @@ namespace GodotTools.Export
                     if (config.UseTempDir)
                     {
                         publishOutputDir = Path.Combine(Path.GetTempPath(), "godot-publish-dotnet",
-                            $"{System.Environment.ProcessId}-{buildConfig}-{runtimeIdentifier}");
+                            System.Environment.ProcessId.ToString(),
+                            $"{buildConfig}-{runtimeIdentifier}");
                         _tempFolders.Add(publishOutputDir);
                     }
                     else
@@ -332,19 +333,28 @@ namespace GodotTools.Export
             {
                 if (outputPaths.Count > 2)
                 {
+                    string simulatorOutputDir = Path.Combine(Path.GetDirectoryName(outputPaths[0]),
+                        Path.GetFileName(outputPaths[1]));
+
+                    if (!Directory.Exists(simulatorOutputDir))
+                        Directory.CreateDirectory(simulatorOutputDir);
+
                     // lipo the simulator binaries together
-                    // TODO: Move this to the native lipo implementation we have in the macos export plugin.
+                    // TODO: Call the native lipo implementation we have in the macos export plugin so we can do this on other platforms.
                     var lipoArgs = new List<string>();
                     lipoArgs.Add("-create");
                     lipoArgs.AddRange(outputPaths.Skip(1).Select(x => Path.Combine(x, $"{GodotSharpDirs.ProjectAssemblyName}.dylib")));
                     lipoArgs.Add("-output");
-                    lipoArgs.Add(Path.Combine(outputPaths[1], $"{GodotSharpDirs.ProjectAssemblyName}.dylib"));
+                    lipoArgs.Add(Path.Combine(simulatorOutputDir, $"{GodotSharpDirs.ProjectAssemblyName}.dylib"));
 
                     int lipoExitCode = OS.ExecuteCommand(XcodeHelper.FindXcodeTool("lipo"), lipoArgs);
                     if (lipoExitCode != 0)
                         throw new InvalidOperationException($"Command 'lipo' exited with code: {lipoExitCode}.");
 
-                    outputPaths.RemoveRange(2, outputPaths.Count - 2);
+                    // TODO: Also lipo the simulator SYM dylibs together.
+
+                    outputPaths.RemoveRange(1, outputPaths.Count - 1);
+                    outputPaths.Add(simulatorOutputDir);
                 }
 
                 var xcFrameworkPath = Path.Combine(GodotSharpDirs.ProjectBaseOutputPath, publishConfig.BuildConfig,
