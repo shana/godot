@@ -21,6 +21,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    %%EXTENSION_SETTINGS%%
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(GodotPlatform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(GodotPlatform).user.props')" Label="LocalAppDataPlatform" />
@@ -34,7 +35,8 @@
   <ItemGroup Condition="'$(IncludeListImported)'==''">
     %%DEFAULT_ITEMS%%
   </ItemGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  %%FOOTER_IMPORTS%%
   <ImportGroup Label="ExtensionTargets">
+    %%EXTENSION_TARGETS%%
   </ImportGroup>
 </Project>

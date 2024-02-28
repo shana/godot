@@ -1162,6 +1162,10 @@ def generate_vs_project(env, original_args, project_name="godot"):
     vs_configuration = {}
     common_build_prefix = []
     confs = []
+    footer_imports = ['<Import Project="$(VCTargetsPath)\\Microsoft.Cpp.targets" />']
+    extension_settings = []
+    extension_targets = []
+
     for x in sorted(glob.glob("platform/*")):
         # Only platforms that opt in to vs proj generation are included.
         if not os.path.isdir(x) or not os.path.exists(x + "/msvs.py"):
@@ -1188,6 +1192,21 @@ def generate_vs_project(env, original_args, project_name="godot"):
             if platform == platform_name:
                 common_build_prefix = msvs.get_build_prefix(env)
                 vs_configuration = vsconf
+                try:
+                    footer_imports = msvs.get_vcxproj_footer_imports()
+                except:
+                    pass
+
+                try:
+                    extension_settings = msvs.get_vcxproj_extension_settings()
+                except:
+                    pass
+
+                try:
+                    extension_targets = msvs.get_vcxproj_extension_targets()
+                except:
+                    pass
+
         except Exception:
             pass
 
@@ -1541,6 +1560,7 @@ def generate_vs_project(env, original_args, project_name="godot"):
     imports += [
         f'<Import Project="$(MSBuildProjectDirectory)\\{project_name}.vs.user.props" Condition="Exists(\'$(MSBuildProjectDirectory)\\{project_name}.vs.user.props\')"/>'
     ]
+
     section1 = sorted(section1)
     section2 = sorted(section2)
 
@@ -1551,6 +1571,9 @@ def generate_vs_project(env, original_args, project_name="godot"):
         proj_template = proj_template.replace("%%IMPORTS%%", "\n  ".join(imports))
         proj_template = proj_template.replace("%%DEFAULT_ITEMS%%", "\n    ".join(all_items))
         proj_template = proj_template.replace("%%PROPERTIES%%", "\n  ".join(properties))
+        proj_template = proj_template.replace("%%FOOTER_IMPORTS%%", "\n  ".join(footer_imports))
+        proj_template = proj_template.replace("%%EXTENSION_SETTINGS%%", "\n  ".join(extension_settings))
+        proj_template = proj_template.replace("%%EXTENSION_TARGETS%%", "\n  ".join(extension_targets))
 
         with open(f"{project_name}.vcxproj", "w") as f:
             f.write(proj_template)
