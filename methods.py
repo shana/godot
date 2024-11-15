@@ -1172,9 +1172,9 @@ def generate_vs_project(env, original_args, project_name="godot"):
         sys.modules.pop("msvs")
 
     extensions = {}
-    extensions["headers"] = [".h", ".hh", ".hpp"]
-    extensions["sources"] = [".c", ".cc", ".cpp"]
-    extensions["others"] = [".mm", ".inc", ".natvis", ".glsl", ".rc"]
+    extensions["headers"] = [".h", ".hh", ".hpp", ".hxx", ".inc"]
+    extensions["sources"] = [".c", ".cc", ".cpp", ".cxx", ".m", ".mm", ".java"]
+    extensions["others"] = [".natvis", ".glsl", ".rc"]
 
     headers = []
     headers_dirs = []
