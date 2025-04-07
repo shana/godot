@@ -1,6 +1,6 @@
 # Tuples with the name of the arch
 def get_platforms():
-    return [("arm64", "arm64"), ("x86_64", "x86_64")]
+    return [("arm64", "arm64"), ("x64", "x86_64")]
 
 
 def get_configurations():

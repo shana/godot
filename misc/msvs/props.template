@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <!-- Build/Rebuild/Clean targets for NMake are defined in MSVC, so we need to provide them, when using MSBuild without MSVC targets -->
-  <Import Project="$(MSBuildProjectDirectory)/misc/msvs/nmake.substitution.props" Condition="%%CONDITION%% And !Exists('$(VCTargetsPath)\Microsoft.Cpp.targets')" />
+  <Import Project="$(MSBuildProjectDirectory)\misc\msvs\nmake.substitution.props" Condition="%%CONDITION%% And !Exists('$(VCTargetsPath)\Microsoft.Cpp.targets')" />
 </Project>
 <!-- CHECKSUM
 %%HASH%%
