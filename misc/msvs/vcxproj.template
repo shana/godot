@@ -27,11 +27,11 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(GodotPlatform).user.props" Condition="Exists('$(UserRootDir)\Microsoft.Cpp.$(GodotPlatform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  %%IMPORTS%%
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
     <ActiveProjectItemList></ActiveProjectItemList>
   </PropertyGroup>
-  %%IMPORTS%%
   <ItemGroup Condition="'$(IncludeListImported)'==''">
     %%DEFAULT_ITEMS%%
   </ItemGroup>

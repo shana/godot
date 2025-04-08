@@ -1328,9 +1328,9 @@ def generate_vs_project(env, original_args, project_name="godot"):
 
         commands = "scons"
         if len(common_build_prefix) == 0:
-            commands = "echo Starting SCons &amp;" + commands
+            commands = "echo Starting SCons &amp; " + commands
         else:
-            common_build_prefix[0] = "echo Starting SCons &amp;" + common_build_prefix[0]
+            common_build_prefix[0] = "echo Starting SCons &amp; " + common_build_prefix[0]
 
         cmd = " ".join(common_build_prefix + [" ".join([commands] + common_build_postfix)])
         props_template = props_template.replace("%%BUILD%%", cmd)
